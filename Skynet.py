@@ -1,9 +1,8 @@
 from InquirerPy import inquirer # Port from the javascript version lol! (gay ass shit literally throttled because single core!)
 from InquirerPy import prompt
 from javascript import require, On, Once, AsyncTask, once, off
-import asyncio
 import os
-import multiprocessing
+import threading
 import time
 os.system('cls||clear')
 print("Welcome to Skynet")
@@ -19,7 +18,7 @@ currenttarget = None
 activeprofile = None
 threadslist = []
 
-"""
+
 class thread_with_trace(threading.Thread):
   def __init__(self, *args, **keywords):
     threading.Thread.__init__(self, *args, **keywords)
@@ -49,7 +48,7 @@ class thread_with_trace(threading.Thread):
  
   def kill(self):
     self.killed = True
-"""
+
 #      These are all the menus for profile management
 def mainmenu():
  choices = ["Manage profiles","Manage instances","Crackhead shenanigans"]
@@ -158,7 +157,7 @@ def manuallogin():
    "filter":lambda result: result if(result or result!="") else "Notch",
    }])
    profile = inquirer.confirm(message="Are you willing to use the active profile?").execute()
-   thread_with_trace(generateinstance(username[0],currenttarget[0],currenttarget[1],profile,authenticate,method))
+   generateinstance(username[0],currenttarget[0],currenttarget[1],profile,authenticate,method)
 
 def managetargets():
  choices = ["Go back", "Add server", "Select server", "Remove server"]
@@ -221,7 +220,7 @@ def delserver():
 
 
 def generateinstance(user,ip,port,profile,pw,auth):
- async def __init__(user,ip,port,profile,pw,auth):
+ def __init__(user,ip,port,profile,pw,auth):
      u="Notch"
      h="localhost"
      p=25565
@@ -271,9 +270,12 @@ def generateinstance(user,ip,port,profile,pw,auth):
         bots.remove(instance)
         del instance
         await(10)
-        generateinstance(u,h,p,profile,psw,auth)
+        # current_thread()
         raise SystemExit()
- asyncio.run(__init__(user,ip,port,profile,pw,auth))
+        generateinstance(u,h,p,profile,psw,auth)
+ s=threading.Thread(target=__init__,args=(user,ip,port,profile,pw,auth))
+ s.start()
+
 
 def generatebots():
  if not len(list(targetlist.keys()))>0: 
@@ -317,11 +319,12 @@ def generatebots():
      "default": 4.5
      }])
    if config:
-    async def loop():
+    def loop():
        for x in range(config['amount']):
         generateinstance(config['prefix']+str(x),currenttarget[0],currenttarget[1],config['profile'],"","")
         time.sleep(config['time'])
-   asyncio.run(loop())
+    s=threading.Thread(target=loop)
+    s.start()
    commandandconquer()
 
 """
