@@ -156,7 +156,7 @@ def manuallogin():
    "transformer":lambda result: result if (result or result!="") else "Notch", 
    "filter":lambda result: result if(result or result!="") else "Notch",
    }])
-   profile = inquirer.confirm(message="Are you willing to use the active profile?").execute()
+   profile = inquirer.confirm(message="Are you willing to use the active profile?",default=True).execute()
    generateinstance(username[0],currenttarget[0],currenttarget[1],profile,authenticate,method)
 
 def managetargets():
@@ -261,9 +261,9 @@ def generateinstance(user,ip,port,profile,pw,auth):
        @On(instance,"physicsTick")
        def physicsTick(*args):
         #len(list(filter(lambda e: e.username==entity.username, bots)))==0
-        closestplr = instance.nearestEntity(lambda entity: entity.type == "player" and not (entity in bots)) #lookAt is borked on python! lol!11
-        if closestplr: 
-         instance.lookAt(closestplr.position.offset(0,1.62,0),True) #.offset(0,closestplr.height,0)
+        closestplr = instance.nearestEntity(lambda entity: entity.type == "player" and not (len(list(filter(lambda x: x.username==entity.username,bots)))>0)) #lookAt is borked on python! lol!11
+        if closestplr: #.offset(0,1.62,0)
+         instance.lookAt(closestplr.position,True) #.offset(0,closestplr.height,0)
 
        @On(instance,"kicked")
        async def kicked(*args):
@@ -291,8 +291,8 @@ def generatebots():
      "type": "input",
      "message": "Type your desired bot prefix",
      "name": "prefix",
-     "filter": lambda result: result if(result or result!="") else "profile",
-     "transformer": lambda result: result if (result or result!="") else "profile" 
+     "filter": lambda result: result if(result or result!="") else "Bot",
+     "transformer": lambda result: result if (result or result!="") else "Bot" 
      },
      {
      "type": "number",
