@@ -3,8 +3,8 @@
 //if (global.gc) {if (global.gc) {}else{console.log("Can't manually control garbage collector! If you don't want to have the process take up gigs of memory, close the script and run this instead: node --expose-gc index.js")}}
 console.clear()
 console.log("Welcome to Skynet!")
-const { Confirm } = require('enquirer');
-const { prompt } = require('enquirer');
+const { Confirm } = require('enquirer')
+const { prompt } = require('enquirer')
 const { Worker, isMainThread, workerData, BroadcastChannel} = require('worker_threads')
 //console.log(require('enquirer').prompts)
 
@@ -15,11 +15,10 @@ const { pathfinder, Movements, goals } = require("mineflayer-pathfinder");
 const GoalFollow = goals.GoalFollow
 const GoalBlock = goals.GoalBlock
 var botparams = {}
-var bots = {}
+//var bots = new Map()
+var instancetree = new Map()
+var targetlist = new Object()
 var threads = []
-var targetlist = {}
-var currenttarget;
-var activeprofile;
 // str.replace(/\s/g, '');
 
 /*
@@ -70,14 +69,14 @@ let menu= {
     name: 'selection',
     message: "What would you like to do?",
     type: "Select",
-    choices: ["Go back","Create a profile","Select profile","Remove profile"]
+    choices: ["Go back","Create a profile","Remove profile"] //"Select profile" - Merged into login menus
 }
 prompt(menu)
 .then(answer=>{
 if(answer.selection==menu.choices[0].value){mainmenu()}
 if(answer.selection==menu.choices[1].value){createprofile(botprofilemenu)}
-if(answer.selection==menu.choices[2].value){selectprofile(botprofilemenu)}
-if(answer.selection==menu.choices[3].value){removeprofile()}
+//if(answer.selection==menu.choices[2].value){selectprofile(botprofilemenu)}
+if(answer.selection==menu.choices[2].value){removeprofile()}
 })
 .catch()
 };
@@ -123,7 +122,7 @@ function ret() {if(returnto!==undefined){returnto()}}
 menu.choices.push("Cancel")
 prompt(menu)
 .then(answer=>{
-if (answer.selection!=="Cancel") {activeprofile = botparams[answer.selection]; ret()} else {ret(); return;}})
+if (answer.selection!=="Cancel") {return botparams[answer.selection]} else {return false}})
 .catch()
 }
 
@@ -136,7 +135,7 @@ function removeprofile() {
   }
   if (Object.keys(botparams).length>0){console.log("[Remember to press SPACE to select items then press ENTER to confirm!]")} else {console.log("You don't have any profiles!"); botprofilemenu(); return}
   prompt(menu)
-  .then(answer=>{answer.selection.forEach(function(x){if(activeprofile==botparams[x]){activeprofile==undefined} delete botparams[x]}); botprofilemenu()})
+  .then(answer=>{answer.selection.forEach(function(x){delete botparams[x]}); botprofilemenu()})
   .catch()
 }
 ////
@@ -158,8 +157,10 @@ function commandandconquer(){
   .catch()
 }
 function manuallogin() {
-if (Object.keys(targetlist).length>0){} else {console.log("You don't have any servers to log into!"); addserver(manuallogin);  return}
-if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(manuallogin); return}
+if (Object.keys(targetlist).length>0){} else {console.log("You don't have any servers to log into!"); addserver(manuallogin);}
+//if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(manuallogin); return}
+let currenttarget2 = selectserver()
+while (!currenttarget2) {}
 let auth = [{
     name: "loginmethod",
     message: "Choose your authentication method",
@@ -200,27 +201,35 @@ cracked.run()
     prompt(user).then(answerr=>{ let u="Notch"; if(answerr.username!==""){u=answerr.username} commandandconquer(); 
 
 
-    generateinstance(u,currenttarget[0],currenttarget[1],panswer,pw)
+    generateinstance(u,currenttarget2[0],currenttarget2[1],panswer,pw)
 
     })}).catch()}}).catch()
     
 }
 
 function generateinstance(user,ip,port,profile,pw) {
+
+if (instancetree.get(ip)!==undefined && instancetree.get(ip).get(port)!==undefined){
+if (Array.from(instancetree.get(ip).get(port).values()).includes(user)===true){return}}
+
 let worker = new Worker("./Worker.js", { workerData: [user,activeprofile,profile,ip,port,pw]})
+instancetree.set(ip,new Map())
+instancetree.get(ip).set(port,new Map())
+
 threads.push(worker)
+
 worker.on('message', (event) => {
-if (event==="rejoin") {threads.splice(threads.indexOf(worker),1); worker.terminate(); generateinstance(user,ip,port,profile,pw)}else
-if (event==="killme") {threads.splice(threads.indexOf(worker),1); worker.terminate()}else
-if (typeof(event)==="object" && event["creation"]!==undefined) {bots[worker.threadId]=event['creation']; console.log(bots) } //threads.forEach(w=>{w.postMessage({list: Object.values(bots)})})}
+if (event==="rejoin") {threads.splice(threads.indexOf(worker),1); instancetree.get(ip).get(port).delete(worker.threadId); worker.terminate(); setTimeout(generateinstance(user,ip,port,profile,pw),10000)}
+if (event==="killme") {threads.splice(threads.indexOf(worker),1); instancetree.get(ip).get(port).delete(worker.threadId); worker.terminate()}
+if (typeof(event)==="object" && event["creation"]!==undefined) {instancetree.get(ip).get(port).set(worker.threadId,event["creation"]); threads.forEach(w=>w.postMessage({botlist: Array.from(instancetree.get(ip).get(port).values())})) } //threads.forEach(w=>{w.postMessage({list: Object.values(bots)})})}
 })
 //setTimeout(function(){worker.postMessage("HELLO NIGGER!")},1000)
 }
 
 function generatebots() {
 if (Object.keys(targetlist).length>0){} else {console.log("You don't have any servers to log into!"); addserver(generatebots);  return}
-if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(generatebots); return}
-
+//if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(generatebots); return}
+let currenttarget2 = selectserver()
 let bulk = [{
  name: "prefix",
  type: "Input",
@@ -249,7 +258,7 @@ initial: true
 prompt(bulk)
 .then(answer=>{
   for(let i = 0; i<answer.count;i++){
-  setTimeout(function(){generateinstance(answer.prefix+(i+1),currenttarget[0],currenttarget[1],answer.profile)},answer.delay*i)
+  setTimeout(function(){generateinstance(answer.prefix+(i+1),currenttarget2[0],currenttarget2[1],answer.profile)},answer.delay*i)
   }
   
   commandandconquer();
@@ -260,7 +269,7 @@ prompt(bulk)
 }
 function instancemenu() {
   if (Object.keys(targetlist).length>0){} else {console.log("The server list is empty!"); commandandconquer(); return}
-  if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(instancemenu()); return}
+  if (currenttarget!==undefined && currenttarget!==""){} else {console.log("You have to select a server!"); selectserver(); return}
   if (Object.keys(bots).length>0){} else {console.log("There are no bots logged in!"); commandandconquer(); return}
 let menu = {
     type: "Select",
@@ -280,7 +289,7 @@ let menu = {
 function controlinstance() {
 console.log("[Remember to press SPACE to select items then press ENTER to confirm!]")
 let t = new Array()
-bots.forEach(k=>{t.push(k.username)})
+Array.from(bots.values()).forEach(k=>{t.push(k)})
 let menu = {
 type: "MultiSelect",
 message: "Select any instance you desire to control",
@@ -294,7 +303,7 @@ prompt(menu)
 }
 
 function controlswarm() {
-literally1987(bots)
+literally1987(Array.from(bots.values()))
 }
 
 function literally1987(users){
@@ -377,14 +386,14 @@ function managetargets() {
     name: "selection",
     type: "Select",
     message: "What's your next move?",
-    choices: ["Go back", "Add server", "Select server", "Remove server"]
+    choices: ["Go back", "Add server", "Remove server"]
   }
 prompt(menu)
 .then(answer=>{
   if(answer.selection==menu.choices[0].value){commandandconquer()}
   if(answer.selection==menu.choices[1].value){addserver(managetargets)}
-  if(answer.selection==menu.choices[2].value){selectserver(managetargets)}
-  if(answer.selection==menu.choices[3].value){delserver()}
+  //if(answer.selection==menu.choices[2].value){selectserver(managetargets)} - Superseded by login menu
+  if(answer.selection==menu.choices[2].value){delserver()}
 })
 .catch()
 }
@@ -406,7 +415,7 @@ function ret(){if (returnto!==undefined) {returnto()}}
 prompt(menu)
 .then(answer=>{
 let IP="localhost"; let P=25565; 
-if(answer.IP!==""){IP=answer.IP} 
+if(answer.IP!==""){IP=answer.IP}
 if(answer.P!==""){P=answer.Port} 
 targetlist[IP.toString()] = P;ret()})
 .catch()
@@ -419,12 +428,11 @@ let menu = {
   message: "Please select a server",
   choices: Object.keys(targetlist)
 }
+function ret(){ if (returnto) {returnto()}}
 menu.choices.push("Cancel")
-function ret(){if (returnto!==undefined) {returnto()} else {commandandconquer()}}
 prompt(menu)
-.then(answer=>{ if (answer.selection!=="Cancel") {currenttarget=[answer.selection.toString(),targetlist[answer.selection]]; ret()} else {ret(); return;}})
+.then(answer=>{ if (answer.selection!=="Cancel") {return [answer.selection.toString(),targetlist[answer.selection]];} else {ret(); return;}}) //[answer.selection.toString(),targetlist[answer.selection]]
 .catch()
-
 }
 
 function delserver() {
